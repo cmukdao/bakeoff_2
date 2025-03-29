@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bakeoff 2</title>
+    <style type="text/css">
+      /* This CSS is not required, but recommended. */
+      body {
+        height: 100vh;
+        width: 100vw;
+        border: none;
+        margin: 0px;
+        text-align: center;
+        display: flex;
+        flex-direction: column; /* allow stacking of SVG & sliders */
+        align-items: center;
+        justify-content: center;
+      }
+      body.active {
+        border-left: 3px #f06 solid;
+      }
+      footer {
+        width: 100vw;
+        text-align: center;
+        position: absolute;
+        bottom: 0px;
+        padding: 0.75em;
+        border-top: 1px #ddd solid;
+      }
+      svg {
+        border: 1px #ddd solid;
+      }
+      /* Custom slider container styling */
+      #custom-sliders {
+        margin-top: 20px;
+        text-align: center;
+      }
+      #custom-sliders div {
+        margin-bottom: 10px;
+      }
+    </style>
+    <!-- Two required scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+    <script src="https://dhcs-s25-bakeoff2.glitch.me/framework.js"></script>
+  </head>
+  <body>
+    <!-- SVG drawing area -->
+    <div id="main"></div>
+
+    <!-- Custom slider -->
+    <div id="custom-sliders">
+      <div>
+        <label for="rotationSlider">Rotation: <span id="rotationValue">0</span>°</label>
+        <input type="range" id="rotationSlider" min="0" max="360" value="0">
+      </div>
+      <div>
+        <label for="sizeSlider">Size: <span id="sizeValue">40</span>px</label>
+        <input type="range" id="sizeSlider" min="4" max="300" value="40">
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    // =========== This part is required: ===========
+    // This constant can be changed while you are experimenting, but it should be set back to 10 for the Bakeoff:
+    const tasksLength = 10;
+
+    // Create an SVG drawing area in the div with ID "main". Centering is handled by CSS.
+    let svg = SVG().addTo('#main').size(canvasSize + "px", canvasSize + "px");
+
+    // Initialize the "judge" object with the number of tasks per trial, your SVG drawing area, and a team name.
+    const judge = new Judge(tasksLength, svg, "teamName");
+    // =========== /end required ===========
+
+    // Existing event handlers and example code:
+    const startColor = "#6677ee";
+    const goalColor = "#777";
+    let squareBeingClicked = false;
+    let manipulator = svg.group();
+    let goal = svg.group();
+
+    // Global variable for the current task's start square (to be used by the sliders)
+    let currentSquare = null;
+
+    // Any time the mouse moves over the SVG area...
+    svg.on("mousemove", (e) => {
+      if (squareBeingClicked) {
+        manipulator.center(e.offsetX, e.offsetY);
+      }
+    });
+
+    // When a new task is assigned...
+    judge.on("newTask", () => {
+      let task = judge.getCurrentTask();
+
+      // Style the start and goal squares.
+      task.start.square.fill(startColor);
+      task.goal.square.fill('none');
+      task.goal.square.stroke(goalColor);
+
+      // Add the new squares to their groups.
+      manipulator.add(task.start.square);
+      goal.add(task.goal.square);
+
+      // Set the global currentSquare for slider controls.
+      currentSquare = task.start.square;
+
+      // Optional: Add some event handlers.
+      let squareClickHandler = function() {
+        console.log("Click!");
+      };
+      task.start.square.on("click", squareClickHandler);
+      task.start.square.on("mousedown", () => {
+        squareBeingClicked = true;
+      });
+      task.start.square.on("mouseup", () => {
+        squareBeingClicked = false;
+      });
+    });
+
+    // Start the judge's process.
+    judge.setup();
+
+    // ===== Slider Control Code =====
+    const rotationSlider = document.getElementById("rotationSlider");
+    const rotationValueDisplay = document.getElementById("rotationValue");
+    const sizeSlider = document.getElementById("sizeSlider");
+    const sizeValueDisplay = document.getElementById("sizeValue");
+    let currentRotation = 0;
+    // Update rotation when the rotation slider moves.
+    rotationSlider.addEventListener("input", (e) => {
+      const newAngle = parseFloat(e.target.value);
+      const angleChange = newAngle - currentRotation;
+      currentRotation = newAngle; 
+      rotationValueDisplay.textContent = newAngle;
+      if (currentSquare) {
+        currentSquare.rotate(angleChange,currentSquare.cx(),currentSquare.cy());
+      }
+    });
+
+    // Update size when the size slider moves.
+    sizeSlider.addEventListener("input", (e) => {
+      const newSize = parseFloat(e.target.value);
+      sizeValueDisplay.textContent = newSize;
+      if (currentSquare) {
+        // Resize the square and re-center it.
+        currentSquare.size(newSize, newSize);
+        const bbox = currentSquare.bbox();
+        currentSquare.center(bbox.cx, bbox.cy);
+      }
+    });
+  </script>
+</html>

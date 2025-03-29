@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Bakeoff 2</title>
+    <style type="text/css">
+      body {
+        height: 100vh;
+        width: 100vw;
+        border: none;
+        margin: 0px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      svg {
+        border: 1px #ddd solid;
+      }
+      #custom-sliders {
+        margin-top: 20px;
+      }
+      input[type="range"] {
+        width: 400px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
+    <script src="https://dhcs-s25-bakeoff2.glitch.me/framework.js"></script>
+  </head>
+  <body>
+    <div id="main"></div>
+    <div id="custom-sliders">
+      <div>
+        <label for="rotationSlider">Rotation: <span id="rotationValue">0</span>°</label>
+        <input type="range" id="rotationSlider" min="0" max="360" value="0">
+      </div>
+      <div>
+        <label for="sizeSlider">Size: <span id="sizeValue">40</span>px</label>
+        <input type="range" id="sizeSlider" min="4" max="300" value="40">
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript">
+    const tasksLength = 10;
+    let svg = SVG().addTo('#main').size(canvasSize, canvasSize);
+    const judge = new Judge(tasksLength, svg, "teamName");
+
+    const startColor = "#6677ee";
+    const goalColor = "#777";
+    let squareBeingClicked = false;
+    let isDraggingHandle = false;
+    let manipulator = svg.group();
+    let goal = svg.group();
+    let currentSquare = null;
+    let rotationArm, handle;
+    let currentRotation = 0;
+
+    function updateHandlePosition() {
+      if (!currentSquare) return;
+      const r = 50;
+      const angleRad = (currentRotation * Math.PI) / 180;
+      const cx = currentSquare.cx();
+      const cy = currentSquare.cy();
+
+      const hx = cx + r * Math.cos(angleRad);
+      const hy = cy + r * Math.sin(angleRad);
+      
+      rotationArm.plot(cx, cy, hx, hy);
+      handle.center(hx, hy);
+    }
+
+    svg.on("mousemove", (e) => {
+      if (isDraggingHandle && currentSquare) {
+        const cx = currentSquare.cx();
+        const cy = currentSquare.cy();
+        const dx = e.offsetX - cx;
+        const dy = e.offsetY - cy;
+        const newAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+        const angleChange = newAngle - currentRotation;
+        currentRotation = newAngle;
+        currentSquare.rotate(angleChange, cx, cy);
+        rotationSlider.value = Math.round(currentRotation);
+        rotationValueDisplay.textContent = Math.round(currentRotation);
+        updateHandlePosition();
+      }
+    });
+
+    svg.on("mouseup", () => {
+      isDraggingHandle = false;
+    });
+
+    judge.on("newTask", () => {
+      // Remove previous handle if exists
+      if (handle) {
+        handle.remove();
+        rotationArm.remove();
+      }
+
+      let task = judge.getCurrentTask();
+      task.start.square.fill(startColor);
+      task.goal.square.fill('none').stroke(goalColor);
+      manipulator.add(task.start.square);
+      goal.add(task.goal.square);
+      currentSquare = task.start.square;
+
+      // Create new rotation arm and handle
+      rotationArm = svg.line(0, 0, 0, 0).stroke({ color: "black", width: 2 });
+      handle = svg.circle(10).fill("#f06").stroke({ color: "#000", width: 1 });
+
+      manipulator.add(rotationArm);
+      manipulator.add(handle);
+
+      updateHandlePosition();
+
+      handle.on("mousedown", () => {
+        isDraggingHandle = true;
+      });
+
+      task.start.square.on("mousedown", () => {
+        squareBeingClicked = true;
+      });
+    });
+
+    judge.setup();
+
+    const rotationSlider = document.getElementById("rotationSlider");
+    const rotationValueDisplay = document.getElementById("rotationValue");
+    const sizeSlider = document.getElementById("sizeSlider");
+    const sizeValueDisplay = document.getElementById("sizeValue");
+
+    rotationSlider.addEventListener("input", (e) => {
+      const newAngle = parseFloat(e.target.value);
+      const angleChange = newAngle - currentRotation;
+      currentRotation = newAngle;
+      rotationValueDisplay.textContent = newAngle;
+      if (currentSquare) {
+        currentSquare.rotate(angleChange, currentSquare.cx(), currentSquare.cy());
+        updateHandlePosition();
+      }
+    });
+
+    sizeSlider.addEventListener("input", (e) => {
+      const newSize = parseFloat(e.target.value);
+      sizeValueDisplay.textContent = newSize;
+      if (currentSquare) {
+        const cx = currentSquare.cx();
+        const cy = currentSquare.cy();
+        currentSquare.size(newSize, newSize);
+        currentSquare.center(cx, cy);
+        updateHandlePosition();
+      }
+    });
+  </script>
+</html>

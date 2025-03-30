@@ -49,7 +49,7 @@
     const judge = new Judge(tasksLength, svg, "teamName");
 
     const startColor = "#6677ee";
-    const goalColor = "#777";
+    const goalColor = "#000000";
     let squareBeingClicked = false;
     let isDraggingHandle = false; // tracks if handle is being dragged
     let isDraggingSquare = false; // tracks if the squre is being dragged
@@ -66,7 +66,7 @@
         const cx = manipulator.cx();
         const cy = manipulator.cy();
         const squareSize = currentSquare.width() / 2;
-        const r = squareSize + 20;
+        const r = squareSize + 40;
         const angleRad = (currentRotation * Math.PI) / 180;
         const hx = cx + r * Math.cos(angleRad);
         const hy = cy + r * Math.sin(angleRad);
@@ -143,7 +143,7 @@
         line2.rotate(task.goal.rotation || 0, goalSquareCenter, goalSquareCenterY);
 
         goal.add(line1);
-        goal.add(line1);
+        goal.add(line2);
 
         // handle mouse down on the handle to start rotation
         handle.on("mousedown", (e) => {

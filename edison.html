@@ -46,11 +46,8 @@
     // =========== End Required Setup ===========
 
     // Colors and styling:
-    // Target (goal) square: bright orange (distinct from navy blue)
     const targetStrokeColor = "#FFA500";
-    // All player's temporary lines and square: navy blue.
     const playerColor = "navy";
-    // Corner markers: red.
     const markerColor = "red";
 
     // Groups for player's square, target square, and corner markers.
@@ -132,7 +129,6 @@
     // Function to finalize the square using points A, B, and C.
     // -------------------------------
     function finalizeSquare() {
-      // Assume points A, B, and C are three consecutive corners.
       // Compute the missing fourth corner D as: D = A + (C - B)
       let pointD = {
         x: pointA.x + (pointC.x - pointB.x),
@@ -179,6 +175,28 @@
       pointA = pointB = pointC = null;
       if (tempLine) { tempLine.remove(); tempLine = null; }
       if (dottedLine) { dottedLine.remove(); dottedLine = null; }
+
+      // Remove the temporary interactive line.
+      if (tempLine) { tempLine.remove(); tempLine = null; }
+
+      // WIP ZOOM
+    //   const zoomThreshold = 100; // if the square's side is less than 50
+    //   const goalSize = task.goal.size
+    //   const centerX = task.goal.position.x
+    //   const centerY = task.goal.position.y
+
+    //   if (goalSize < zoomThreshold) {
+    //     // Set viewBox so that the square occupies a larger portion.
+    //     // Here we show an area three times the side length, centered on the square.
+    //     let vbX = centerX - goalSize * 1.5;
+    //     let vbY = centerY - goalSize * 1.5;
+    //     let vbW = goalSize * 3;
+    //     let vbH = goalSize * 3;
+    //     svg.viewbox(vbX, vbY, vbW, vbH);
+    //   } else {
+    //     // Reset to full canvas view.
+    //     svg.viewbox(0, 0, canvasSize, canvasSize);
+    //   }
     });
 
     judge.setup();

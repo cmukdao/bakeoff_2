@@ -162,7 +162,7 @@
       let task = judge.getCurrentTask();
       // Style the target (goal) square with a thick orange stroke.
       task.goal.square.fill("none");
-      task.goal.square.stroke({ color: targetStrokeColor, width: 2 });
+      task.goal.square.stroke({ color: targetStrokeColor, width: 4 });
       goalGroup.add(task.goal.square);
       // Remove any default start square.
       if (task.start.square) { task.start.square.remove(); }

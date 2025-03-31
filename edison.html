@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Bakeoff 2 - Three Tap Square (Improved)</title>
+    <title>Bakeoff 2 - Two Tap Square</title>
     <style type="text/css">
       /* Basic styling */
       body {
@@ -56,39 +56,27 @@
     let cornerMarkersGroup = svg.group();
 
     // -------------------------------
-    // Three-tap mechanism globals:
+    // Two-tap mechanism globals:
     // -------------------------------
-    // threeTapState: "waitingForFirst", "waitingForSecond", "waitingForThird", "done"
-    let threeTapState = "waitingForFirst";
-    let pointA = null, pointB = null, pointC = null;
-    let tempLine = null;    // temporary interactive line for current tap segment
-    let dottedLine = null;  // dashed reference line drawn between first and second taps
-
-    // Fixed stroke widths for temporary lines.
-    const tempLineWidth = 2;
-    const dottedLineWidth = 1;
+    // twoTapState: "waitingForFirst", "waitingForSecond", "done"
+    let twoTapState = "waitingForFirst";
+    let pointA = null, pointC = null;
 
     // -------------------------------
-    // Mousemove handler to update temporary line endpoints.
+    // Mousemove handler (optional for visual feedback):
     // -------------------------------
-    svg.on("mousemove", (e) => {
-      if (threeTapState === "waitingForSecond" && pointA) {
-        tempLine.plot(pointA.x, pointA.y, e.offsetX, e.offsetY);
-      } else if (threeTapState === "waitingForThird" && pointB) {
-        tempLine.plot(pointB.x, pointB.y, e.offsetX, e.offsetY);
-      }
-    });
+    // Here you can update a temporary line if desired.
+    // (Not required for two-tap version, so it’s omitted.)
 
     // -------------------------------
     // Click handler to record taps and add red corner markers.
     // -------------------------------
     svg.on("click", (e) => {
-      // If a square was already finalized, then clear only the player's square,
-      if (threeTapState === "done") {
+      // If a square was already finalized, then clear only the player's square.
+      if (twoTapState === "done") {
         manipulator.clear();
-        // Reset points and state to allow a new square.
-        threeTapState = "waitingForFirst";
-        pointA = pointB = pointC = null;
+        twoTapState = "waitingForFirst";
+        pointA = pointC = null;
       }
       // Do not process clicks if all tasks are complete.
       if (judge.getTaskNumber() >= tasksLength) return;
@@ -97,56 +85,38 @@
       let marker = svg.circle(8).center(e.offsetX, e.offsetY).fill(markerColor);
       cornerMarkersGroup.add(marker);
 
-      if (threeTapState === "waitingForFirst") {
+      if (twoTapState === "waitingForFirst") {
         // First tap: record point A.
         pointA = { x: e.offsetX, y: e.offsetY };
-        // Create a temporary line starting at point A.
-        tempLine = svg.line(pointA.x, pointA.y, pointA.x, pointA.y)
-                      .stroke({ color: playerColor, width: tempLineWidth });
-        threeTapState = "waitingForSecond";
-      } else if (threeTapState === "waitingForSecond") {
-        // Second tap: record point B.
-        pointB = { x: e.offsetX, y: e.offsetY };
-        if (tempLine) { tempLine.remove(); tempLine = null; }
-        // Draw a dashed reference line from A to B.
-        dottedLine = svg.line(pointA.x, pointA.y, pointB.x, pointB.y)
-                        .stroke({ color: playerColor, width: dottedLineWidth, dasharray: "5,5" });
-        // Create a new temporary line starting at point B for the third tap.
-        tempLine = svg.line(pointB.x, pointB.y, pointB.x, pointB.y)
-                      .stroke({ color: playerColor, width: tempLineWidth });
-        threeTapState = "waitingForThird";
-      } else if (threeTapState === "waitingForThird") {
-        // Third tap: record point C.
+        twoTapState = "waitingForSecond";
+      } else if (twoTapState === "waitingForSecond") {
+        // Second tap: record point C (diagonally opposite to point A).
         pointC = { x: e.offsetX, y: e.offsetY };
         finalizeSquare();
-        if (dottedLine) { dottedLine.remove(); dottedLine = null; }
         cornerMarkersGroup.clear();
-        threeTapState = "done";
+        twoTapState = "done";
       }
     });
 
     // -------------------------------
-    // Function to finalize the square using points A, B, and C.
+    // Function to finalize the square using points A and C.
     // -------------------------------
     function finalizeSquare() {
-      // Compute the missing fourth corner D as: D = A + (C - B)
-      let pointD = {
-        x: pointA.x + (pointC.x - pointB.x),
-        y: pointA.y + (pointC.y - pointB.y)
-      };
-      // Compute the center as the average of A, B, C, and D.
-      let centerX = (pointA.x + pointB.x + pointC.x + pointD.x) / 4;
-      let centerY = (pointA.y + pointB.y + pointC.y + pointD.y) / 4;
-      // Compute side lengths from A→B and B→C.
-      let sideAB = Math.hypot(pointB.x - pointA.x, pointB.y - pointA.y);
-      let sideBC = Math.hypot(pointC.x - pointB.x, pointC.y - pointB.y);
-      let side = (sideAB + sideBC) / 2;
-      // Determine rotation as the angle from A to B (in degrees).
-      let angleDeg = Math.atan2(pointB.y - pointA.y, pointB.x - pointA.x) * 180 / Math.PI;
-      // Create the player's square (start square) as a navy blue filled rectangle.
+      // Compute the center of the square as the midpoint of A and C.
+      let centerX = (pointA.x + pointC.x) / 2;
+      let centerY = (pointA.y + pointC.y) / 2;
+      // Compute the diagonal length.
+      let diagLength = Math.hypot(pointC.x - pointA.x, pointC.y - pointA.y);
+      // The side length is the diagonal divided by sqrt(2).
+      let side = diagLength / Math.SQRT2;
+      // Calculate the angle of the diagonal in degrees.
+      let diagAngleDeg = Math.atan2(pointC.y - pointA.y, pointC.x - pointA.x) * 180 / Math.PI;
+      // For a square, the rectangle rotation is the diagonal angle minus 45°.
+      let squareAngle = diagAngleDeg - 45;
+      // Create the player's square as a navy blue filled rectangle.
       let newSquare = svg.rect(side, side)
                          .center(centerX, centerY)
-                         .rotate(angleDeg)
+                         .rotate(squareAngle)
                          .fill(playerColor);
       // Ensure only one square exists: clear any previous square.
       manipulator.clear();
@@ -154,8 +124,6 @@
       // Assign the new square as the start square for the current task.
       let task = judge.getCurrentTask();
       task.start.square = newSquare;
-      // Remove the temporary interactive line.
-      if (tempLine) { tempLine.remove(); tempLine = null; }
     }
 
     judge.on("newTask", () => {
@@ -170,33 +138,9 @@
       manipulator.clear();
       // Clear corner markers from the previous task.
       cornerMarkersGroup.clear();
-      // Reset the three-tap mechanism.
-      threeTapState = "waitingForFirst";
-      pointA = pointB = pointC = null;
-      if (tempLine) { tempLine.remove(); tempLine = null; }
-      if (dottedLine) { dottedLine.remove(); dottedLine = null; }
-
-      // Remove the temporary interactive line.
-      if (tempLine) { tempLine.remove(); tempLine = null; }
-
-      // WIP ZOOM
-    //   const zoomThreshold = 100; // if the square's side is less than 50
-    //   const goalSize = task.goal.size
-    //   const centerX = task.goal.position.x
-    //   const centerY = task.goal.position.y
-
-    //   if (goalSize < zoomThreshold) {
-    //     // Set viewBox so that the square occupies a larger portion.
-    //     // Here we show an area three times the side length, centered on the square.
-    //     let vbX = centerX - goalSize * 1.5;
-    //     let vbY = centerY - goalSize * 1.5;
-    //     let vbW = goalSize * 3;
-    //     let vbH = goalSize * 3;
-    //     svg.viewbox(vbX, vbY, vbW, vbH);
-    //   } else {
-    //     // Reset to full canvas view.
-    //     svg.viewbox(0, 0, canvasSize, canvasSize);
-    //   }
+      // Reset the two-tap mechanism.
+      twoTapState = "waitingForFirst";
+      pointA = pointC = null;
     });
 
     judge.setup();

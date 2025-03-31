@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Bakeoff 2 - Two Tap Square</title>
+    <title>Bakeoff 2 - Two Tap Square with Bottom Buttons</title>
     <style type="text/css">
       /* Basic styling */
       body {
@@ -14,17 +14,41 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        position: relative;
       }
       body.active {
         border-left: 3px #f06 solid;
       }
-      footer {
-        width: 100vw;
-        text-align: center;
+      /* Canvas container */
+      #main {
+        position: relative;
+        z-index: 1;
+      }
+      #markers {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        pointer-events: none;
+      }
+      /* Button container overlays the bottom of the canvas,
+         but pointer events only work on the buttons, not the container */
+      .button-container {
         position: absolute;
         bottom: 0;
-        padding: 0.75em;
-        border-top: 1px #ddd solid;
+        left: 0;
+        width: 100%;
+        pointer-events: none; /* container ignores pointer events */
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 10px;
+        z-index: 2;
+      }
+      .button-container button {
+        pointer-events: auto; /* enable pointer events on buttons */
+        padding: 0.5em 1em;
+        font-size: 16px;
       }
       svg {
         border: 1px #ddd solid;
@@ -49,11 +73,13 @@
     const targetStrokeColor = "#FFA500";
     const playerColor = "navy";
     const markerColor = "red";
+  
 
     // Groups for player's square, target square, and corner markers.
     let manipulator = svg.group();
-    let goalGroup = svg.group();
+    let goal = svg.group();
     let cornerMarkersGroup = svg.group();
+
 
     // -------------------------------
     // Two-tap mechanism globals:
@@ -61,12 +87,6 @@
     // twoTapState: "waitingForFirst", "waitingForSecond", "done"
     let twoTapState = "waitingForFirst";
     let pointA = null, pointC = null;
-
-    // -------------------------------
-    // Mousemove handler (optional for visual feedback):
-    // -------------------------------
-    // Here you can update a temporary line if desired.
-    // (Not required for two-tap version, so it’s omitted.)
 
     // -------------------------------
     // Click handler to record taps and add red corner markers.
@@ -127,17 +147,17 @@
     }
 
     judge.on("newTask", () => {
+      manipulator.clear();
+      cornerMarkersGroup.clear();
+
       let task = judge.getCurrentTask();
-      // Style the target (goal) square with a thick orange stroke.
+      task.start.square.fill(playerColor);
+      newSquare = task.start.square;
+      manipulator.add(newSquare)
       task.goal.square.fill("none");
       task.goal.square.stroke({ color: targetStrokeColor, width: 4 });
-      goalGroup.add(task.goal.square);
-      // Remove any default start square.
-      if (task.start.square) { task.start.square.remove(); }
-      // Clear the manipulator group.
-      manipulator.clear();
-      // Clear corner markers from the previous task.
-      cornerMarkersGroup.clear();
+			goal.add(task.goal.square);
+
       // Reset the two-tap mechanism.
       twoTapState = "waitingForFirst";
       pointA = pointC = null;

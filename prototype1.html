@@ -118,6 +118,14 @@
       });
     });
 
+    judge.on("testOver", (data) => {
+      for (let i=1; i<data.scores.length; i++) { // starting on the second one, since the first one is the "learning" trial, which doesn't affect the score
+        let score = data.scores[i];
+        let summedScore = (8*score.distance) + (900*score.scaleFactor) + (4*score.rotationFactor); // using the weight values as listed on Canvas
+        console.log("Trial "+i+": "+summedScore);
+      }
+    });
+
     // Start the judge's process.
     judge.setup();
 
